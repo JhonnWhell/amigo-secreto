@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="font-normal">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Mural público de preferências de presentes do Amigo Secreto." />
+  <title>Amigo Secreto — Lista de Preferências de Presentes</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Barra superior de acessibilidade (ajuste de tamanho de fonte para 3ª idade) -->
+  <div class="a11y-bar" role="region" aria-label="Ajuste de tamanho do texto">
+    <div class="container a11y-bar-inner">
+      <span class="a11y-label">Tamanho da letra:</span>
+      <div class="a11y-buttons" role="group" aria-label="Escolher tamanho da letra">
+        <button type="button" class="a11y-btn is-active" data-font="normal" aria-pressed="true">
+          Normal
+        </button>
+        <button type="button" class="a11y-btn" data-font="large" aria-pressed="false">
+          Grande (A+)
+        </button>
+        <button type="button" class="a11y-btn" data-font="xlarge" aria-pressed="false">
+          Muito Grande (A++)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <header class="site-header">
+    <div class="container">
+      <h1 class="site-title">Amigo Secreto</h1>
+      <p class="site-subtitle">Lista pública de preferências de presentes</p>
+    </div>
+  </header>
+
+  <main id="main-content" class="container main-content">
+    <!-- Mensagem global de erro/aviso com opção de tentar novamente -->
+    <div id="global-alert" class="alert hidden" role="alert" aria-live="assertive">
+      <p id="global-alert-text" class="alert-text"></p>
+      <button id="btn-retry-load" type="button" class="btn btn-outline btn-sm hidden">
+        Tentar carregar novamente
+      </button>
+    </div>
+
+    <!-- Indicador de carregamento -->
+    <div id="global-loading" class="loading-box hidden" role="status" aria-live="polite">
+      <div class="spinner" aria-hidden="true"></div>
+      <p id="global-loading-text" class="loading-text">Carregando lista de participantes...</p>
+    </div>
+
+    <!-- TELA 1: INÍCIO -->
+    <section id="screen-home" class="screen" aria-labelledby="home-heading">
+      <h2 id="home-heading" class="sr-only">Página inicial</h2>
+
+      <div class="info-banner" role="note">
+        <strong>Aviso importante:</strong> As preferências de presentes são públicas para todos os participantes. O sorteio de quem tirou quem não aparece aqui.
+      </div>
+
+      <div class="home-actions">
+        <button id="btn-go-fill" type="button" class="btn btn-primary btn-xl">
+          Preencher ou editar minhas preferências
+        </button>
+
+        <button id="btn-go-list" type="button" class="btn btn-secondary btn-xl">
+          Ver lista de presentes de todos
+        </button>
+      </div>
+    </section>
+
+    <!-- TELA 2: SELECIONAR OU CADASTRAR PARTICIPANTE -->
+    <section id="screen-select-name" class="screen hidden" aria-labelledby="select-name-heading">
+      <button id="btn-back-home-from-name" type="button" class="btn btn-outline btn-back">
+        ← Voltar para o início
+      </button>
+
+      <div class="card">
+        <h2 id="select-name-heading">Quem é você?</h2>
+        <p class="helper-text">
+          Toque no seu nome na lista abaixo. Se você já preencheu antes, suas respostas salvas serão carregadas automaticamente sem apagar nada.
+        </p>
+
+        <div class="form-group">
+          <label for="filter-select-name" class="field-label">Procurar meu nome rapidamente (opcional):</label>
+          <input
+            type="search"
+            id="filter-select-name"
+            class="text-input"
+            placeholder="Toque aqui para filtrar pelo seu nome..."
+            autocomplete="off"
+          />
+        </div>
+
+        <div
+          id="participant-radio-list"
+          class="name-list"
+          role="radiogroup"
+          aria-label="Lista de participantes cadastrados"
+        ></div>
+
+        <p id="filter-name-empty" class="empty-message hidden">
+          Nenhum nome encontrado na busca acima. Você pode cadastrar seu nome logo abaixo!
+        </p>
+
+        <div id="selected-name-feedback" class="selection-feedback hidden" aria-live="polite"></div>
+
+        <button id="btn-start-form" type="button" class="btn btn-primary btn-lg btn-full mt-md">
+          Continuar com o nome escolhido →
+        </button>
+      </div>
+
+      <div class="card card-secondary">
+        <h3>Não encontrou seu nome na lista?</h3>
+        <p class="helper-text">
+          Cadastre seu nome abaixo para participar. Não precisa de senha nem de conta do Google.
+        </p>
+
+        <div class="form-group">
+          <label for="new-participant-name" class="field-label">Digite seu nome:</label>
+          <p class="example-note">
+            <strong>Exemplo (não será salvo):</strong> Maria Clara
+          </p>
+          <input
+            type="text"
+            id="new-participant-name"
+            class="text-input"
+            placeholder="Toque aqui para escrever seu nome..."
+            autocomplete="name"
+            maxlength="60"
+          />
+        </div>
+
+        <div id="new-name-error" class="inline-error hidden" role="alert">
+          <p id="new-name-error-text" class="inline-error-text"></p>
+          <button id="btn-use-existing-name" type="button" class="btn btn-primary btn-full mt-sm hidden">
+            Abrir este nome existente →
+          </button>
+        </div>
+
+        <button id="btn-add-participant" type="button" class="btn btn-secondary btn-lg btn-full">
+          Cadastrar meu nome e começar
+        </button>
+      </div>
+    </section>
+
+    <!-- TELA 3: FORMULÁRIO GUIADO (4 ETAPAS) -->
+    <section id="screen-form" class="screen hidden" aria-label="Formulário de preferências">
+      <div class="form-top-bar">
+        <div class="form-top-header">
+          <p class="active-user-badge">
+            Preenchendo para: <strong id="form-participant-name"></strong>
+          </p>
+          <button id="btn-change-person" type="button" class="btn-link">
+            Trocar pessoa
+          </button>
+        </div>
+
+        <p id="step-progress-text" class="progress-text">Etapa 1 de 4</p>
+        <div
+          id="step-progressbar"
+          class="progress-bar-track"
+          role="progressbar"
+          aria-label="Progresso do preenchimento"
+          aria-valuemin="1"
+          aria-valuemax="4"
+          aria-valuenow="1"
+        >
+          <div id="step-progress-fill" class="progress-bar-fill" style="width: 25%;"></div>
+        </div>
+      </div>
+
+      <!-- ETAPA 1: O QUE GOSTARIA DE GANHAR -->
+      <div id="step-1" class="step-panel card">
+        <h2>Etapa 1: O que você gostaria de ganhar?</h2>
+        <p class="helper-text">
+          Toque nos quadros abaixo para marcar ou desmarcar quantas opções quiser. Nenhum campo é obrigatório.
+        </p>
+
+        <div id="wishes-options" class="options-grid" role="group" aria-label="O que gostaria de ganhar"></div>
+
+        <div class="form-group mt-lg">
+          <label for="wishes-other" class="field-label">Outro / Detalhes (opcional):</label>
+          <p class="example-note">
+            <strong>Exemplo (apenas ilustrativo, não será salvo):</strong> livro de suspense, chinelo tamanho 38 ou maquiagem em tons neutros.
+          </p>
+          <textarea
+            id="wishes-other"
+            class="textarea-input"
+            rows="3"
+            maxlength="500"
+            placeholder="Toque aqui se quiser detalhar ou pedir outra coisa..."
+          ></textarea>
+        </div>
+      </div>
+
+      <!-- ETAPA 2: O QUE NÃO GOSTARIA DE GANHAR -->
+      <div id="step-2" class="step-panel card hidden">
+        <h2>Etapa 2: O que você NÃO gostaria de ganhar?</h2>
+        <p class="helper-text">
+          Marque abaixo o que você prefere evitar receber de presente (opcional).
+        </p>
+
+        <div id="conflict-warning" class="conflict-box hidden" role="status" aria-live="polite"></div>
+
+        <div id="avoid-options" class="options-grid" role="group" aria-label="O que não gostaria de ganhar"></div>
+
+        <div class="form-group mt-lg">
+          <label for="avoid-other" class="field-label">Outro / Detalhes (opcional):</label>
+          <p class="example-note">
+            <strong>Exemplo (apenas ilustrativo, não será salvo):</strong> não gostaria de ganhar vasilhas de cozinha ou perfumes doces.
+          </p>
+          <textarea
+            id="avoid-other"
+            class="textarea-input"
+            rows="3"
+            maxlength="500"
+            placeholder="Toque aqui se quiser explicar o que prefere não ganhar..."
+          ></textarea>
+        </div>
+      </div>
+
+      <!-- ETAPA 3: ESPECIFICIDADES (CONDICIONAL) -->
+      <div id="step-3" class="step-panel card hidden">
+        <h2>Etapa 3: Especificidades e observações</h2>
+        <p class="helper-text">
+          Todos os campos abaixo são opcionais. Preencha apenas o que ajudar quem tirou você.
+        </p>
+
+        <!-- Bloco Condicional: Roupas -->
+        <div id="section-clothes" class="sub-card hidden">
+          <h3>Tamanho de Roupas</h3>
+          <p class="helper-text">
+            Como você marcou que aceita ganhar <strong>Roupas</strong>, informe seu tamanho da forma que achar mais fácil:
+          </p>
+
+          <div class="form-group">
+            <span class="field-label">Tamanho por letra (toque para marcar; pode escolher mais de um se variar):</span>
+            <div id="clothes-size-buttons" class="size-grid" role="group" aria-label="Tamanho convencional de roupas"></div>
+          </div>
+
+          <div class="form-group">
+            <label for="clothes-number" class="field-label">Numeração exata (opcional):</label>
+            <p class="example-note">
+              <strong>Exemplo (não será salvo):</strong> 42
+            </p>
+            <input
+              type="text"
+              id="clothes-number"
+              class="text-input input-short"
+              inputmode="numeric"
+              placeholder="Digite o número..."
+              maxlength="25"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="clothes-details" class="field-label">Detalhar por peça ou explicar (opcional):</label>
+            <p class="example-note">
+              <strong>Exemplo (não será salvo):</strong> Camisa M, Calça 42 — ou escreva "Não sei / prefiro explicar".
+            </p>
+            <input
+              type="text"
+              id="clothes-details"
+              class="text-input"
+              placeholder="Toque aqui para detalhar tamanhos por peça..."
+              maxlength="200"
+            />
+          </div>
+        </div>
+
+        <!-- Bloco Condicional: Calçados -->
+        <div id="section-shoes" class="sub-card hidden">
+          <h3>Tamanho de Calçados</h3>
+          <p class="helper-text">
+            Como você marcou que aceita ganhar <strong>Calçados</strong>, informe sua numeração brasileira:
+          </p>
+
+          <div class="form-group">
+            <label for="shoes-number" class="field-label">Numeração brasileira (opcional):</label>
+            <p class="example-note">
+              <strong>Exemplo (não será salvo):</strong> 38
+            </p>
+            <input
+              type="text"
+              id="shoes-number"
+              class="text-input input-short"
+              inputmode="numeric"
+              placeholder="Digite o número..."
+              maxlength="25"
+            />
+          </div>
+
+          <div class="form-group">
+            <label class="checkbox-card single-check" for="shoes-unknown">
+              <input type="checkbox" id="shoes-unknown" />
+              <span class="checkbox-box" aria-hidden="true"></span>
+              <span class="checkbox-label">Não sei / prefiro explicar no campo abaixo</span>
+            </label>
+          </div>
+
+          <div class="form-group">
+            <label for="shoes-details" class="field-label">Detalhes sobre calçados (opcional):</label>
+            <p class="example-note">
+              <strong>Exemplo (não será salvo):</strong> Calço 37 para sandália e 38 para tênis, ou forma mais larga.
+            </p>
+            <input
+              type="text"
+              id="shoes-details"
+              class="text-input"
+              placeholder="Toque aqui para explicar detalhes do calçado..."
+              maxlength="200"
+            />
+          </div>
+        </div>
+
+        <!-- Sempre visível: Restrições Alimentares -->
+        <div class="sub-card">
+          <h3>Restrições Alimentares</h3>
+          <p class="helper-text">
+            Importante mesmo que não tenha pedido doces, caso alguém queira incluir um chocolate de lembrança.
+          </p>
+          <div id="diet-options" class="options-grid" role="group" aria-label="Restrições alimentares"></div>
+
+          <div class="form-group mt-md">
+            <label for="diet-other" class="field-label">Detalhes sobre alimentação (opcional):</label>
+            <p class="example-note">
+              <strong>Exemplo (não será salvo):</strong> Chocolate somente zero lactose ou meio amargo.
+            </p>
+            <input
+              type="text"
+              id="diet-other"
+              class="text-input"
+              placeholder="Toque aqui se quiser explicar alguma restrição..."
+              maxlength="300"
+            />
+          </div>
+        </div>
+
+        <!-- Sempre visível: Preferências Sensoriais e Materiais -->
+        <div class="sub-card">
+          <h3>Preferências Sensoriais e Materiais</h3>
+          <p class="helper-text">
+            Marque se preferir evitar certos estímulos ou materiais nos presentes (opcional).
+          </p>
+          <div id="sensory-options" class="options-grid" role="group" aria-label="Preferências sensoriais e materiais"></div>
+
+          <div class="form-group mt-md">
+            <label for="sensory-other" class="field-label">Detalhes sobre materiais ou preferências (opcional):</label>
+            <p class="example-note">
+              <strong>Exemplo (não será salvo):</strong> Prefiro tecidos macios de algodão e sem som.
+            </p>
+            <input
+              type="text"
+              id="sensory-other"
+              class="text-input"
+              placeholder="Toque aqui se quiser detalhar..."
+              maxlength="300"
+            />
+          </div>
+        </div>
+
+        <!-- Sempre visível: Outras Observações -->
+        <div class="sub-card">
+          <h3>Outras observações (opcional)</h3>
+          <div class="form-group">
+            <label for="other-notes" class="field-label">Cores preferidas, alergias ou qualquer dica extra:</label>
+            <p class="example-note">
+              <strong>Exemplo (não será salvo):</strong> Gosto muito de tons de verde/azul e tenho alergia a níquel em bijuterias.
+            </p>
+            <textarea
+              id="other-notes"
+              class="textarea-input"
+              rows="3"
+              maxlength="500"
+              placeholder="Toque aqui para deixar outras dicas..."
+            ></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- ETAPA 4: REVISÃO E CONFIRMAÇÃO -->
+      <div id="step-4" class="step-panel card hidden">
+        <h2>Etapa 4: Confira suas respostas antes de salvar</h2>
+        <p class="helper-text">
+          Leia com calma o resumo abaixo. Se quiser mudar alguma parte, toque em <strong>Alterar</strong> no bloco correspondente ou em <strong>Voltar</strong>.
+        </p>
+
+        <div id="empty-review-notice" class="conflict-box hidden" role="status">
+          Você ainda não marcou nenhuma preferência. Se quiser escolher opções antes de salvar, toque em <strong>Alterar Etapa 1</strong> abaixo.
+        </div>
+
+        <div id="review-summary" class="review-box"></div>
+
+        <div id="save-error" class="inline-error hidden" role="alert"></div>
+      </div>
+
+      <!-- BOTÕES GRANDES DE NAVEGAÇÃO ENTRE ETAPAS -->
+      <div class="step-navigation">
+        <button id="btn-step-prev" type="button" class="btn btn-outline btn-lg">
+          ← Voltar
+        </button>
+
+        <button id="btn-step-next" type="button" class="btn btn-primary btn-lg">
+          Próximo →
+        </button>
+
+        <button id="btn-step-save" type="button" class="btn btn-success btn-lg hidden">
+          Confirmar e Salvar
+        </button>
+      </div>
+    </section>
+
+    <!-- TELA 4: SUCESSO APÓS SALVAR -->
+    <section id="screen-success" class="screen hidden" aria-labelledby="success-heading">
+      <div class="card success-card">
+        <div class="success-icon" aria-hidden="true">✓</div>
+        <h2 id="success-heading">Preferências salvas com sucesso!</h2>
+        <p id="success-message" class="helper-text">
+          Suas escolhas já estão disponíveis na lista pública do Amigo Secreto.
+        </p>
+
+        <div class="home-actions mt-lg">
+          <button id="btn-success-list" type="button" class="btn btn-primary btn-lg">
+            Ver lista de presentes de todos
+          </button>
+          <button id="btn-success-home" type="button" class="btn btn-outline btn-lg">
+            Voltar para o início
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- TELA 5: LISTA PÚBLICA DE TODOS OS PARTICIPANTES -->
+    <section id="screen-list" class="screen hidden" aria-labelledby="public-list-heading">
+      <div class="list-header-actions">
+        <button id="btn-back-home-from-list" type="button" class="btn btn-outline btn-back">
+          ← Voltar para o início
+        </button>
+        <button id="btn-refresh-list" type="button" class="btn btn-secondary">
+          Atualizar lista
+        </button>
+      </div>
+
+      <div class="card">
+        <h2 id="public-list-heading">Lista de presentes de todos</h2>
+        <p class="helper-text">
+          Todos os participantes em ordem alfabética. Digite um nome abaixo para encontrar alguém rapidamente.
+        </p>
+
+        <div class="form-group">
+          <label for="search-participant" class="field-label">Buscar participante por nome:</label>
+          <div class="search-row">
+            <input
+              type="search"
+              id="search-participant"
+              class="text-input"
+              placeholder="Toque aqui e digite o nome..."
+              autocomplete="off"
+            />
+            <button id="btn-clear-search" type="button" class="btn btn-outline hidden">
+              Limpar busca
+            </button>
+          </div>
+        </div>
+
+        <!-- Filtros rápidos de status -->
+        <div class="status-filters" role="group" aria-label="Filtrar participantes por preenchimento">
+          <button type="button" class="filter-chip is-active" data-status-filter="all" aria-pressed="true">
+            Todos (<span id="count-all">0</span>)
+          </button>
+          <button type="button" class="filter-chip" data-status-filter="filled" aria-pressed="false">
+            Já preencheram (<span id="count-filled">0</span>)
+          </button>
+          <button type="button" class="filter-chip" data-status-filter="pending" aria-pressed="false">
+            Ainda faltam (<span id="count-pending">0</span>)
+          </button>
+        </div>
+
+        <p id="list-count" class="list-count" aria-live="polite"></p>
+
+        <!-- Tabela para Computador / Telas Maiores -->
+        <div class="table-wrapper">
+          <table class="public-table" aria-label="Tabela pública de preferências de presentes">
+            <thead>
+              <tr>
+                <th scope="col">Nome</th>
+                <th scope="col">O que deseja</th>
+                <th scope="col">O que não deseja</th>
+                <th scope="col">Especificidades</th>
+              </tr>
+            </thead>
+            <tbody id="table-body"></tbody>
+          </table>
+        </div>
+
+        <!-- Cartões Empilhados para Celular -->
+        <div id="mobile-cards" class="mobile-cards" aria-label="Cartões de preferências de presentes"></div>
+
+        <p id="empty-search-msg" class="empty-message hidden">
+          Nenhum participante encontrado para esse filtro.
+        </p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <p>Amigo Secreto — Mural público de preferências de presentes (sem sorteio)</p>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
